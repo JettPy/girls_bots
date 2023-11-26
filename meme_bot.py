@@ -2,6 +2,7 @@ import os
 import dotenv
 import telebot
 from telebot.types import Message
+import requests
 
 dotenv.load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
@@ -26,6 +27,15 @@ def start(message: Message):
 def button_handlers(call):
     # TODO Доделать обработку нажатия кнопок
     pass
+
+@bot.message_handler(commands=["meme"])
+def meme_generator(message: Message):
+    response = requests.get("http://api.memegen.link/images/aag/foo/bar.png")
+    image_content = response.content
+    with open("meme.pgp","wb") as file:
+        file.write(image_content)
+    with open("meme.pgp", "rb") as file:
+        bot.send_photo(message.from_user.id,file)
 
 
 bot.infinity_polling()
