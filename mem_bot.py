@@ -3,6 +3,7 @@ import telebot
 from telebot.types import Message
 import os
 import dotenv
+import requests
 
 dotenv.load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
@@ -41,6 +42,16 @@ def text(message: Message):
     # TODO Реализовать работу по регистрации пользователя в базе данных
     pass
     # bot.register_next_step_handler()
+
+
+@bot.message_handler(commands=['meme'])
+def meme_generator(message: Message):
+    response = requests.get("https://api.memegen.link/images/aag/foo/bar.png")
+    image_content = response.content
+    with open("meme.png","wb") as file:
+        file.write(image_content)
+    with open("meme.png", "rb") as file:
+        bot.send_photo(message.from_user.id, file)
 
 
 bot.infinity_polling()
