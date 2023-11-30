@@ -39,9 +39,14 @@ conn.commit()
 # Автор: Маркина Ирина Артёмовна
 @bot.message_handler(commands=['start'])
 def text(message: Message):
-    # TODO Реализовать работу по регистрации пользователя в базе данных
-    pass
-    # bot.register_next_step_handler()
+    bot.send_message(message.from_user.id, "Придумайте пароль")
+    bot.register_next_step_handler(message, register_user)
+
+def register_user(message):
+    password = message.text
+    user = message.from_user.username
+    cursor.execute('INSERT INTO users (username,password) VALUES (?, ?)', (user, password))
+    bot.send_message(message.from_user.id, "вы зареганы")
 
 
 # Временная константа:
