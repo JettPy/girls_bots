@@ -15,7 +15,7 @@ bot = telebot.TeleBot(API_TOKEN)
 def start(message: Message):
     inline_menu = telebot.types.InlineKeyboardMarkup(row_width=1)
     favorites_button = telebot.types.InlineKeyboardButton("ИЗБРАНАНЫЕ", callback_data="favorites")
-    search_button = telebot.types.InlineKeyboardButton("ИСКАТЬ", callback_data="search")
+    search_button = telebot.types.InlineKeyboardButton("Создать", callback_data="search")
     # TODO Возможно тут добавим еще одну кнопку
     inline_menu.add(favorites_button, search_button)
     bot.send_message(message.chat.id, "Выберите действие:", reply_markup=inline_menu)
@@ -25,8 +25,11 @@ def start(message: Message):
 # Автор: Маркина Вера Артёмовна
 @bot.callback_query_handler(func=lambda call: call.data)
 def button_handlers(call):
-    # TODO Доделать обработку нажатия кнопок
-    pass
+    if call.data == "favorites":
+        pass
+    elif call.data == "search":
+        # bot.send_message(call.message.chat.id, call)
+        get_meme_image(call.message)
 
 
 # Временная константа:
