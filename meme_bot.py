@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import telebot
 from telebot.types import Message
@@ -6,47 +7,55 @@ import dotenv
 import requests
 
 dotenv.load_dotenv()
-API_TOKEN = os.getenv("API_TOKEN")
+API_TOKEN = os.getenv('API_TOKEN')
 bot = (telebot.TeleBot(API_TOKEN))
 
 # Подключение к базе данных
 # Автор: Маркина Ирина Артёмовна
-conn = sqlite3.connect("memebot.db", check_same_thread=False) # Подключение базе данных
-cursor = conn.cursor()
+connection = sqlite3.connect('memebot.sqlite', check_same_thread=False)  # Подключение базе данных
+cursor = connection.cursor()
 
 # Создание таблицы для хранения записей пользователей
-cursor.execute('''CREATE TABLE IF NOT EXISTS users
-                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   username TEXT,
-                   password TEXT)''')
-conn.commit() # Подключение к базе данных
-
-# Создание таблицы для хранения записей мемов
-cursor.execute('''CREATE TABLE IF NOT EXISTS memes
-                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   meme BLOB)''')
-conn.commit()
-
-# Создание таблицы для хранения записей любимых мемов
-cursor.execute('''CREATE TABLE IF NOT EXISTS favorites
-                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   user_id INTEGER,
-                   meme_id INTEGER)''')
-conn.commit()
+cursor.execute('''CREATE TABLE IF NOT EXISTS memes(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL, 
+                    meme BLOB NOT NULL
+                )''')
+connection.commit()  # Подключение к базе данных
 
 
-# Регистрация пользователя в базе данных
+# Обработчик командны сохранения мема
 # Автор: Маркина Ирина Артёмовна
-@bot.message_handler(commands=['start'])
-def text(message: Message):
-    bot.send_message(message.from_user.id, "Придумайте пароль")
-    bot.register_next_step_handler(message, register_user)
+@bot.message_handler(commands=['save'])
+def save_handler(message: Message):
+    bot.send_message(message.chat.id, "Хорошо, пришлите мне мем, я его сохраню")
+    bot.register_next_step_handler(message, save_to_database)
 
-def register_user(message):
-    password = message.text
-    user = message.from_user.username
-    cursor.execute('INSERT INTO users (username,password) VALUES (?, ?)', (user, password))
-    bot.send_message(message.from_user.id, "вы зареганы")
+
+# Сохранение мема в базе данных
+# Автор: Маркина Ирина Артёмовна
+def save_to_database(message: Message):
+    if message.photo:
+        user = message.from_user.username
+        meme_info = bot.get_file(message.photo[-1].file_id)
+        meme = bot.download_file(meme_info.file_path)
+        cursor.execute('''INSERT INTO memes (username, meme) VALUES (?, ?)''', (user, meme))
+        connection.commit()
+        bot.send_message(message.chat.id, 'Мем сохранен в избранное')
+    else:
+        bot.send_message(message.chat.id, 'Это не картинка... Попробуй еще раз')
+
+
+# Получение сохраненных мемов
+# Автор: Маркина Ирина Артёмовна
+@bot.message_handler(commands=['favourite'])
+def favourite_handler(message: Message):
+    bot.send_message(message.chat.id, "Вот ваши мемы:")
+    cursor.execute('''SELECT meme FROM memes WHERE username = ?''', (message.from_user.username,))
+    memes = cursor.fetchall()
+    # Отправляем пользователю все сохраненные мемы
+    for meme in memes:
+        bot.send_photo(message.chat.id, meme[0])
 
 
 # Временная константа:
