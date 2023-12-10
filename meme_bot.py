@@ -9,15 +9,18 @@ API_TOKEN = os.getenv("API_TOKEN")
 bot = telebot.TeleBot(API_TOKEN)
 
 
+user = ''
+
 # Обработчик команды /actions - вывод кнопок для удобного использования бота
 # Автор: Маркина Вера Артёмовна
-@bot.message_handler(commands=["actions"])
+@bot.message_handler(commands=["start"])
 def start(message: Message):
     inline_menu = telebot.types.InlineKeyboardMarkup(row_width=1)
     favorites_button = telebot.types.InlineKeyboardButton("ИЗБРАНАНЫЕ", callback_data="favorites")
-    search_button = telebot.types.InlineKeyboardButton("ИСКАТЬ", callback_data="search")
-    # TODO Возможно тут добавим еще одну кнопку
-    inline_menu.add(favorites_button, search_button)
+    create_button = telebot.types.InlineKeyboardButton("СОЗДАТЬ", callback_data="create")
+    inline_menu.add(favorites_button, create_button)
+    global user
+    user = message.chat.id
     bot.send_message(message.chat.id, "Выберите действие:", reply_markup=inline_menu)
 
 
@@ -25,8 +28,37 @@ def start(message: Message):
 # Автор: Маркина Вера Артёмовна
 @bot.callback_query_handler(func=lambda call: call.data)
 def button_handlers(call):
-    # TODO Доделать обработку нажатия кнопок
+    global user
+    if call.data == "favorites":
+        favorites(call.data.message)
+    elif call.data == "create":
+        # bot.send_message(user, call)
+        create_from_user(call.from_user.id)
+
+
+def favorites(message: Message):
     pass
+
+
+def create(message: Message):
+    global images_ids
+    img_response = requests.get("http://api.memegen.link/templates")
+    images_data = img_response.json()
+    images_ids = {data["id"] for data in images_data}
+    bot.send_message(message.from_user.id, ", ".join(images_ids))
+    bot.send_message(message.from_user.id, "Выберите картинку для мема")
+    bot.register_next_step_handler(message, get_meme_top_text)
+
+
+def create_from_user(user_id):
+    global images_ids
+    img_response = requests.get("http://api.memegen.link/templates")
+    images_data = img_response.json()
+    images_ids = {data["id"] for data in images_data}
+    bot.send_message(user_id, ", ".join(images_ids))
+    bot.send_message(user_id, "Выберите картинку для мема")
+    bot.register_next_step_handler(user_id, get_meme_top_text)
+
 
 
 # Временная константа:
@@ -37,13 +69,7 @@ images_ids = set()
 # 1 этап - выбор изображения
 @bot.message_handler(commands=["meme"])
 def get_meme_image(message: Message):
-    global images_ids
-    img_response = requests.get("http://api.memegen.link/templates")
-    images_data = img_response.json()
-    images_ids = {data["id"] for data in images_data}
-    bot.send_message(message.from_user.id, ", ".join(images_ids))
-    bot.send_message(message.from_user.id, "Выберите картинку для мема")
-    bot.register_next_step_handler(message, get_meme_top_text)
+    favorites(message)
 
 
 # 2 этап - выбор текста сверху
