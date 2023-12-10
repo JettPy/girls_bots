@@ -10,37 +10,41 @@ bot = (telebot.TeleBot(API_TOKEN))
 
 # Подключение к базе данных
 # Автор: Маркина Ирина Артёмовна
-conn = sqlite3.connect("memebot.db", check_same_thread=False) # Подключение базе данных
+conn = sqlite3.connect("memebot.db", check_same_thread=False)  # Подключение базе данных
 cursor = conn.cursor()
 
-# Создание таблицы для хранения записей пользователей
-cursor.execute('''CREATE TABLE IF NOT EXISTS users
-                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   username TEXT,
-                   password TEXT)''')
-conn.commit() # Подключение к базе данных
 
 # Создание таблицы для хранения записей мемов
-cursor.execute('''CREATE TABLE IF NOT EXISTS memes
-                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   meme BLOB)''')
-conn.commit()
-
-# Создание таблицы для хранения записей любимых мемов
-cursor.execute('''CREATE TABLE IF NOT EXISTS favorites
-                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   user_id INTEGER,
-                   meme_id INTEGER)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS memes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT,
+                meme BLOB
+                )''')
 conn.commit()
 
 
 # Регистрация пользователя в базе данных
 # Автор: Маркина Ирина Артёмовна
-@bot.message_handler(commands=['start'])
-def text(message: Message):
-    # TODO Реализовать работу по регистрации пользователя в базе данных
-    pass
+@bot.message_handler(commands=['save'])
+def save(message: Message):
+    bot.send_message(message.from_user.id, 'пришлите мем!!!')
+    bot.register_next_step_handler(message, upload_meme)
+
+
+def upload_meme(message: Message):
+    with open("meme.jpg","rd") as file:
+        image_blob = file.read()
+    cursor.execute('''
+    INSERT INTO memes(username, meme)
+    VALUES(??)
+    ''', (message.from_user.username, image_blob))
+    conn.commit()
     # bot.register_next_step_handler()
+
+
+@bot.message_handler(commands=['favorite'])
+def favorite(message: Message):
+    pass
 
 
 bot.infinity_polling()
